@@ -70,4 +70,18 @@ return {
       },
     },
   },
+  {
+    "folke/edgy.nvim",
+    opts = {
+      animate = {
+        enabled = false,
+      },
+    },
+  },
+  {
+    "snacks.nvim",
+    opts = {
+      scroll = { enabled = false },
+    },
+  },
 }
