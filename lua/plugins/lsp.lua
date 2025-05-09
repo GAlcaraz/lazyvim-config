@@ -37,53 +37,66 @@ return {
   -- correctly setup lspconfig
   {
     "neovim/nvim-lspconfig",
-    opts = {
-      -- make sure mason installs the server
-      servers = {
-        ---@type lspconfig.options.tsserver
-        tsserver = {
-          keys = {
-            {
-              "<leader>co",
-              function()
-                vim.lsp.buf.code_action({
-                  apply = true,
-                  context = {
-                    only = { "source.organizeImports.ts" },
-                    diagnostics = {},
-                  },
-                })
-              end,
-              desc = "Organize Imports",
-            },
-            {
-              "<leader>cR",
-              function()
-                vim.lsp.buf.code_action({
-                  apply = true,
-                  context = {
-                    only = { "source.removeUnused.ts" },
-                    diagnostics = {},
-                  },
-                })
-              end,
-              desc = "Remove Unused Imports",
-            },
+    opts = function(_, opts)
+      -- Store the original handler
+      local on_publish_diagnostics = vim.lsp.handlers["textDocument/publishDiagnostics"]
+
+      -- Setup .env file diagnostic suppression for bashls
+      opts.servers = opts.servers or {}
+      opts.servers.bashls = vim.tbl_deep_extend("force", opts.servers.bashls or {}, {
+        handlers = {
+          ["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
+            local file_name = vim.fn.fnamemodify(vim.uri_to_fname(result.uri), ":t")
+            if string.match(file_name, "^%.env") == nil then
+              return on_publish_diagnostics(err, result, ctx, config)
+            end
+          end,
+        },
+      })
+
+      -- Continue with existing tsserver configuration
+      opts.servers.tsserver = {
+        keys = {
+          {
+            "<leader>co",
+            function()
+              vim.lsp.buf.code_action({
+                apply = true,
+                context = {
+                  only = { "source.organizeImports.ts" },
+                  diagnostics = {},
+                },
+              })
+            end,
+            desc = "Organize Imports",
           },
-          settings = {
-            typescript = {
-              inlayHints = inlay_hints_settings,
-            },
-            javascript = {
-              inlayHints = inlay_hints_settings,
-            },
-            completions = {
-              completeFunctionCalls = true,
-            },
+          {
+            "<leader>cR",
+            function()
+              vim.lsp.buf.code_action({
+                apply = true,
+                context = {
+                  only = { "source.removeUnused.ts" },
+                  diagnostics = {},
+                },
+              })
+            end,
+            desc = "Remove Unused Imports",
           },
         },
-      },
-    },
+        settings = {
+          typescript = {
+            inlayHints = inlay_hints_settings,
+          },
+          javascript = {
+            inlayHints = inlay_hints_settings,
+          },
+          completions = {
+            completeFunctionCalls = true,
+          },
+        },
+      }
+    end,
   },
 
   {
